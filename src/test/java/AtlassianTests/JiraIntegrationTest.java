@@ -34,24 +34,31 @@ import com.sun.jersey.client.apache.config.ApacheHttpClientConfig;
 
 /**
  * Tests of the Jira Rest API.
+ * These tests expect a local instance of Jira running at port 8080 and a local
+ * instance of Crowd running at 8095.  In addition there is an application
+ * configured in crowd called crowd-auth-webapp with the password "password".
+ * Also a user in crowd with the credentials test/test.
  */
 public class JiraIntegrationTest extends TestCase{
    /**
-    * This test case attempts to authenticate with the local Crowd instance and use that
-    * authentication token to access Jira.
-    * This currently fails when we attempt to access Jira.  It seems to access Crowd without 
-    * a problem, but haven't been able to access Jira yet using that token.
+    * This test case attempts to authenticate with the local Crowd instance and 
+    * use that authentication token to access Jira.
+    * This currently fails when we attempt to access Jira.  It seems to access 
+    * Crowd without a problem, but haven't been able to access Jira yet using 
+    * that token.
     * @see <a href="https://answers.atlassian.com/questions/288694/integrating-crowd-authentication-with-jira-rest-api">Atlassian Community Question</a>
     */
   @Test
   public void testCrowdAuthentication() throws Exception {
     System.out.println("\n\n****TestCrowdAuthentication****");
     RestCrowdClientFactory factory = new RestCrowdClientFactory();
-    CrowdClient client = factory.newInstance("http://127.0.0.1:8095/crowd", "crowd-auth-webapp", "password");
+    CrowdClient client = factory.newInstance("http://127.0.0.1:8095/crowd", 
+    		"crowd-auth-webapp", "password");
     assertNotNull("Client should not be null", client);
     final CookieConfiguration cookieConfig = client.getCookieConfiguration();
     assertNotNull("Cookie Config should not be null", cookieConfig);
-    System.out.printf("Cookie Config: %1$s, %2$s\n", cookieConfig.getDomain(), cookieConfig.getName());
+    System.out.printf("Cookie Config: %1$s, %2$s\n", cookieConfig.getDomain(), 
+    		cookieConfig.getName());
     UserAuthenticationContext userAuthCtx = new UserAuthenticationContext();
     userAuthCtx.setName("test");
     userAuthCtx.setCredential(new PasswordCredential("test"));
@@ -59,16 +66,21 @@ public class JiraIntegrationTest extends TestCase{
     userAuthCtx.setValidationFactors(new ValidationFactor[0]);
     final String token = client.authenticateSSOUser(userAuthCtx);
     assertNotNull("Token should not be null", token);
-    final Session session = client.validateSSOAuthenticationAndGetSession(token, new Vector<ValidationFactor>());
+    final Session session = client.validateSSOAuthenticationAndGetSession(token, 
+    		new Vector<ValidationFactor>());
     assertNotNull("Session should not be null", session);
-    assertEquals("Session token and original token should be equal", session.getToken(), token);
+    assertEquals("Session token and original token should be equal", 
+    		session.getToken(), token);
     System.out.printf("Session Token: %s %n", session.getToken());
     System.out.printf("Session Expires: %tc %n", session.getExpiryDate());
     
-    JiraRestClientFactory jiraFactory = new com.atlassian.jira.rest.client.internal.jersey.JerseyJiraRestClientFactory();
-    JiraRestClient jira = jiraFactory.create(new URI("http://127.0.0.1:8080"), new AuthenticationHandler(){
+    JiraRestClientFactory jiraFactory = 
+    		new com.atlassian.jira.rest.client.internal.jersey.JerseyJiraRestClientFactory();
+    JiraRestClient jira = jiraFactory.create(new URI("http://127.0.0.1:8080"), 
+    		new AuthenticationHandler(){
       public void configure(ApacheHttpClientConfig config) {
-        config.getProperties().put(ApacheHttpClientConfig.PROPERTY_HANDLE_COOKIES, true);
+        config.getProperties()
+        	.put(ApacheHttpClientConfig.PROPERTY_HANDLE_COOKIES, true);
         Cookie cookie = new Cookie();
         cookie.setName(cookieConfig.getName());
         cookie.setValue(token);
@@ -88,8 +100,10 @@ public class JiraIntegrationTest extends TestCase{
   @Test
   public void testBasicAuthentication() throws Exception{
     System.out.println("\n\n****TestBasicAuthentication****");
-    JiraRestClientFactory jiraFactory = new com.atlassian.jira.rest.client.internal.jersey.JerseyJiraRestClientFactory();
-    JiraRestClient jira = jiraFactory.create(new URI("http://127.0.0.1:8080"), new BasicHttpAuthenticationHandler("test", "test"));
+    JiraRestClientFactory jiraFactory = 
+    		new com.atlassian.jira.rest.client.internal.jersey.JerseyJiraRestClientFactory();
+    JiraRestClient jira = jiraFactory.create(new URI("http://127.0.0.1:8080"), 
+    		new BasicHttpAuthenticationHandler("test", "test"));
     TestJiraClient(jira);
   }
   
