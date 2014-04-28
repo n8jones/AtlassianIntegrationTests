@@ -32,7 +32,17 @@ import com.sun.jersey.api.client.filter.ClientFilter;
 import com.sun.jersey.api.client.filter.Filterable;
 import com.sun.jersey.client.apache.config.ApacheHttpClientConfig;
 
+/**
+ * Tests of the Jira Rest API.
+ */
 public class JiraIntegrationTest extends TestCase{
+   /**
+    * This test case attempts to authenticate with the local Crowd instance and use that
+    * authentication token to access Jira.
+    * This currently fails when we attempt to access Jira.  It seems to access Crowd without 
+    * a problem, but haven't been able to access Jira yet using that token.
+    * @see <a href="https://answers.atlassian.com/questions/288694/integrating-crowd-authentication-with-jira-rest-api">Atlassian Community Question</a>
+    */
   @Test
   public void testCrowdAuthentication() throws Exception {
     System.out.println("\n\n****TestCrowdAuthentication****");
@@ -72,7 +82,9 @@ public class JiraIntegrationTest extends TestCase{
     TestJiraClient(jira);
   }
   
-  
+  /**
+   * This test case uses basic authentication and it works.
+   */
   @Test
   public void testBasicAuthentication() throws Exception{
     System.out.println("\n\n****TestBasicAuthentication****");
@@ -81,6 +93,10 @@ public class JiraIntegrationTest extends TestCase{
     TestJiraClient(jira);
   }
   
+  /**
+   * Attempts to do some basic access of Jira using the supplied client.
+   * @param jira
+   */
   private void TestJiraClient(JiraRestClient jira){
     ProgressMonitor pm = new NullProgressMonitor();
     SessionRestClient sessions = jira.getSessionClient();
