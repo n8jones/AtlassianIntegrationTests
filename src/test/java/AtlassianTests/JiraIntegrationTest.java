@@ -77,7 +77,7 @@ public class JiraIntegrationTest extends TestCase {
 		UserAuthenticationContext userAuthCtx = new UserAuthenticationContext();
 		userAuthCtx.setName("test");
 		userAuthCtx.setCredential(new PasswordCredential("test"));
-		userAuthCtx.setApplication("crowd-auth-webapp");
+		//userAuthCtx.setApplication("crowd-auth-webapp");
 		userAuthCtx.setValidationFactors(new ValidationFactor[0]);
 		final String token = client.authenticateSSOUser(userAuthCtx);
 		assertNotNull("Token should not be null", token);

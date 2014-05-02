@@ -7,6 +7,7 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>AtlassianIntegrationTests</name>
 	<description>Test the atlassian api</description>
+        <packaging>war</packaging>
 	<repositories>
 		<repository>
 			<id>atlassian-public</id>
@@ -44,6 +45,34 @@
 			<version>4.11</version>
 			<scope>test</scope>
 	    </dependency>
+		<dependency>
+			<groupId>org.apache.httpcomponents</groupId>
+			<artifactId>fluent-hc</artifactId>
+			<version>4.3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20140107</version>
+		</dependency>
+                <dependency>
+                    <groupId>org.glassfish.extras</groupId>
+                    <artifactId>glassfish-embedded-all</artifactId>
+                    <version>3.1.1</version>
+                    <scope>test</scope>
+                  </dependency>
+	 <dependency>
+	  <groupId>javax.servlet</groupId>
+	  <artifactId>javax.servlet-api</artifactId>
+	  <version>3.1.0</version>
+	  <type>jar</type>
+	 </dependency>
+         <dependency>
+	<groupId>org.hsqldb</groupId>
+	<artifactId>hsqldb</artifactId>
+	<version>2.3.2</version>
+</dependency>
+            
 	</dependencies>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
