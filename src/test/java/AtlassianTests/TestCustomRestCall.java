@@ -32,7 +32,7 @@ public class TestCustomRestCall extends TestCase {
     }
 
     public void testApp() throws Exception {
-        HttpResponse res = Request.Get("http://localhost:8084/AtlassianIntegrationTests/rest/authorize")
+        HttpResponse res = Request.Get("http://localhost:9999/AtlassianIntegrationTests/rest/authorize")
                 //.addHeader("User-Agent", "curl/7.36.0")
                 //.addHeader("Host", "localhost:9999")
                 //.addHeader("Accept", "*/*")

@@ -1,20 +1,6 @@
 //JiraIntegrationTest.java
 package AtlassianTests;
 
-import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Vector;
-
-import javax.ws.rs.core.NewCookie;
-
-import junit.framework.TestCase;
-
-import org.apache.commons.httpclient.Cookie;
-import org.apache.commons.httpclient.HttpState;
-import org.junit.Test;
-
 import com.atlassian.crowd.embedded.api.PasswordCredential;
 import com.atlassian.crowd.integration.rest.service.factory.RestCrowdClientFactory;
 import com.atlassian.crowd.model.authentication.CookieConfiguration;
@@ -33,6 +19,7 @@ import com.atlassian.jira.rest.client.UserRestClient;
 import com.atlassian.jira.rest.client.auth.BasicHttpAuthenticationHandler;
 import com.atlassian.jira.rest.client.domain.BasicProject;
 import com.atlassian.jira.rest.client.domain.User;
+import com.atlassian.jira.rest.client.internal.jersey.JerseyJiraRestClientFactory;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandlerException;
 import com.sun.jersey.api.client.ClientRequest;
@@ -43,6 +30,21 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.ClientFilter;
 import com.sun.jersey.api.client.filter.Filterable;
 import com.sun.jersey.client.apache.config.ApacheHttpClientConfig;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
+import java.util.stream.*;
+import javax.ws.rs.core.NewCookie;
+import junit.framework.TestCase;
+import org.apache.commons.httpclient.Cookie;
+import org.apache.commons.httpclient.HttpState;
+import org.junit.Test;
 
 /**
  * Tests of the Jira Rest API. These tests expect a local instance of Jira
@@ -52,155 +54,105 @@ import com.sun.jersey.client.apache.config.ApacheHttpClientConfig;
  * test/test.
  */
 public class JiraIntegrationTest extends TestCase {
-	/**
-	 * This test case attempts to authenticate with the local Crowd instance and
-	 * use that authentication token to access Jira. This currently fails when
-	 * we attempt to access Jira. It seems to access Crowd without a problem,
-	 * but haven't been able to access Jira yet using that token.
-	 * 
-	 * @see <a
-	 *      href="https://answers.atlassian.com/questions/288694/integrating-crowd-authentication-with-jira-rest-api">Atlassian
-	 *      Community Question</a>
-	 */
-	@Test
-	public void testCrowdAuthentication() throws Exception {
-		System.out.println("\n\n****TestCrowdAuthentication****");
-		RestCrowdClientFactory factory = new RestCrowdClientFactory();
-		CrowdClient client = factory.newInstance("http://127.0.0.1:8095/crowd",
-				"crowd-auth-webapp", "password");
-		assertNotNull("Client should not be null", client);
-		final CookieConfiguration cookieConfig = client
-				.getCookieConfiguration();
-		assertNotNull("Cookie Config should not be null", cookieConfig);
-		System.out.printf("Cookie Config: %1$s, %2$s\n",
-				cookieConfig.getDomain(), cookieConfig.getName());
-		UserAuthenticationContext userAuthCtx = new UserAuthenticationContext();
-		userAuthCtx.setName("test");
-		userAuthCtx.setCredential(new PasswordCredential("test"));
-		//userAuthCtx.setApplication("crowd-auth-webapp");
-		userAuthCtx.setValidationFactors(new ValidationFactor[0]);
-		final String token = client.authenticateSSOUser(userAuthCtx);
-		assertNotNull("Token should not be null", token);
-		final Session session = client.validateSSOAuthenticationAndGetSession(
-				token, new Vector<ValidationFactor>());
-		assertNotNull("Session should not be null", session);
-		assertEquals("Session token and original token should be equal",
-				session.getToken(), token);
-		System.out.printf("Session Token: %s %n", session.getToken());
-		System.out.printf("Session Expires: %tc %n", session.getExpiryDate());
 
-		CrowdAuthHandler authHandler = new CrowdAuthHandler(cookieConfig, token);
+    /**
+     * This test case attempts to authenticate with the local Crowd instance and
+     * use that authentication token to access Jira. This currently fails when
+     * we attempt to access Jira. It seems to access Crowd without a problem,
+     * but haven't been able to access Jira yet using that token.
+     *
+     * @see <a
+     * href="https://answers.atlassian.com/questions/288694/integrating-crowd-authentication-with-jira-rest-api">Atlassian
+     * Community Question</a>
+     */
+    @Test
+    public void testCrowdAuthentication() throws Exception {
+        System.out.println("\n\n****TestCrowdAuthentication****");
+        ValidationFactor[] factors = new ValidationFactor[]{
+            new ValidationFactor("remote_address", "127.0.0.1")
+        };
+        RestCrowdClientFactory factory = new RestCrowdClientFactory();
+        CrowdClient client = factory.newInstance("http://127.0.0.1:8095/crowd",
+                "test-app", "test");
+        assertNotNull("Client should not be null", client);
+        final CookieConfiguration cookieConfig = client
+                .getCookieConfiguration();
+        assertNotNull("Cookie Config should not be null", cookieConfig);
+        System.out.printf("Cookie Config: %1$s, %2$s\n",
+                cookieConfig.getDomain(), cookieConfig.getName());
+        UserAuthenticationContext userAuthCtx = new UserAuthenticationContext();
+        userAuthCtx.setName("test");
+        userAuthCtx.setCredential(new PasswordCredential("test"));
+        userAuthCtx.setValidationFactors(factors);
+        final String token = client.authenticateSSOUser(userAuthCtx);
+        assertNotNull("Token should not be null", token);
+        final Session session = client.validateSSOAuthenticationAndGetSession(
+                token, Arrays.asList(factors));
+        assertNotNull("Session should not be null", session);
+        assertEquals("Session token and original token should be equal",
+                session.getToken(), token);
+        System.out.printf("Session Token: %s %n", session.getToken());
+        System.out.printf("Session Expires: %tc %n", session.getExpiryDate());
 
-		// Seed cookies with JSESSIONID
-		ClientConfig cc = new DefaultClientConfig();
-		Map<String, Object> props = cc.getProperties();
-		props.put(ClientConfig.PROPERTY_FOLLOW_REDIRECTS, true);
-		props.put(ApacheHttpClientConfig.PROPERTY_HANDLE_COOKIES, true);
-		Client c = Client.create(cc);
-		authHandler.configure(c, c);
-		WebResource resource = c.resource("http://localhost:8080");
-		String response = resource.path("secure/Dashboard.jspa").get(
-				String.class);
-		System.out.println(response);
+        JiraRestClientFactory jiraFactory = new JerseyJiraRestClientFactory();
+        JiraRestClient jira = jiraFactory.create(new URI(
+                "http://localhost:8080"), new AuthenticationHandler() {
 
-		JiraRestClientFactory jiraFactory = new com.atlassian.jira.rest.client.internal.jersey.JerseyJiraRestClientFactory();
-		JiraRestClient jira = jiraFactory.create(new URI(
-				"http://localhost:8080"), authHandler);
+                    public void configure(ApacheHttpClientConfig config) {
+                        config.getProperties().put(
+                                ApacheHttpClientConfig.PROPERTY_HANDLE_COOKIES, true);
+                        Cookie cookie = new Cookie();
+                        cookie.setName(cookieConfig.getName());
+                        cookie.setValue(token);
+                        cookie.setDomain("localhost");
+                        cookie.setPath("/");
+                        config.getState().getHttpState().addCookie(cookie);
+                    }
 
-		TestJiraClient(jira);
-	}
+                    public void configure(Filterable filterable, Client client) {
+                        //Do Nothing
+                    }
 
-	class CrowdAuthHandler implements AuthenticationHandler {
-		private final String domain = "localhost";
-		private final CookieConfiguration crowdCookieConfig;
-		private final String crowdToken;
-		private final Map<String, Cookie> cookies;
+                });
 
-		public CrowdAuthHandler(CookieConfiguration crowdCookieConfig,
-				String crowdToken) {
-			this.crowdCookieConfig = crowdCookieConfig;
-			this.crowdToken = crowdToken;
-			this.cookies = Collections
-					.synchronizedMap(new HashMap<String, Cookie>());
-			Cookie cookie = new Cookie();
-			cookie.setName(crowdCookieConfig.getName());
-			cookie.setValue(crowdToken);
-			cookie.setDomain(domain);
-			cookie.setPath("/");
-			cookies.put(crowdCookieConfig.getName(), cookie);
-		}
+        TestJiraClient(jira);
+    }
 
-		public void configure(ApacheHttpClientConfig config) {
-			config.getProperties().put(
-					ApacheHttpClientConfig.PROPERTY_HANDLE_COOKIES, true);
-			HttpState state = config.getState().getHttpState();
-			synchronized (cookies) {
-				for (Cookie cookie : cookies.values()) {
-					state.addCookie(cookie);
-					System.out.printf("Adding Cookie: %1s=%2s\n",
-							cookie.getName(), cookie.getValue());
-				}
-			}
-		}
+    /**
+     * This test case uses basic authentication and it works.
+     */
+    @Test
+    public void testBasicAuthentication() throws Exception {
+        System.out.println("\n\n****TestBasicAuthentication****");
+        JiraRestClientFactory jiraFactory
+                = new com.atlassian.jira.rest.client.internal.jersey.JerseyJiraRestClientFactory();
+        JiraRestClient jira = jiraFactory.create(new URI(
+                "http://127.0.0.1:8080"), new BasicHttpAuthenticationHandler(
+                        "test", "test"));
+        TestJiraClient(jira);
+    }
 
-		public void configure(Filterable filterable, Client client) {
-			filterable.addFilter(new ClientFilter() {
-				@Override
-				public ClientResponse handle(ClientRequest cr)
-						throws ClientHandlerException {
-					ClientResponse res = getNext().handle(cr);
-					for (NewCookie cookie : res.getCookies()) {
-						String name = cookie.getName();
-						if (!"JSESSIONID".equals(name))
-							continue;
-						Cookie c = new Cookie();
-						c.setName(name);
-						c.setValue(cookie.getValue());
-						c.setDomain(domain);
-						c.setPath(cookie.getPath());
-						cookies.put(name, c);
-						System.out.printf("New Cookie: %1s=%2s\n", name,
-								c.getValue());
-					}
-					return res;
-				}
-			});
-		}
-	}
+    /**
+     * Attempts to do some basic access of Jira using the supplied client.
+     *
+     * @param jira
+     */
+    private void TestJiraClient(JiraRestClient jira) {
+        ProgressMonitor pm = new NullProgressMonitor();
+        SessionRestClient sessions = jira.getSessionClient();
+        com.atlassian.jira.rest.client.domain.Session jiraSession = sessions
+                .getCurrentSession(pm);
+        assertNotNull(jiraSession);
+        ProjectRestClient projects = jira.getProjectClient();
+        System.out.println("getAllProjects:");
+        List<BasicProject> projs = StreamSupport.stream(projects.getAllProjects(pm).spliterator(), false).collect(Collectors.toList());
 
-	/**
-	 * This test case uses basic authentication and it works.
-	 */
-	@Test
-	public void testBasicAuthentication() throws Exception {
-		System.out.println("\n\n****TestBasicAuthentication****");
-		JiraRestClientFactory jiraFactory = 
-				new com.atlassian.jira.rest.client.internal.jersey.JerseyJiraRestClientFactory();
-		JiraRestClient jira = jiraFactory.create(new URI(
-				"http://127.0.0.1:8080"), new BasicHttpAuthenticationHandler(
-				"test", "test"));
-		TestJiraClient(jira);
-	}
-
-	/**
-	 * Attempts to do some basic access of Jira using the supplied client.
-	 * 
-	 * @param jira
-	 */
-	private void TestJiraClient(JiraRestClient jira) {
-		ProgressMonitor pm = new NullProgressMonitor();
-		SessionRestClient sessions = jira.getSessionClient();
-		com.atlassian.jira.rest.client.domain.Session jiraSession = sessions
-				.getCurrentSession(pm);
-		assertNotNull(jiraSession);
-		ProjectRestClient projects = jira.getProjectClient();
-		System.out.println("getAllProjects:");
-		for (BasicProject project : projects.getAllProjects(pm)) {
-			System.out.println("\t" + project.getName());
-		}
-		UserRestClient users = jira.getUserClient();
-		User user = users.getUser("test", pm);
-		System.out.println("getUser:");
-		System.out.println("\t" + user.getName());
-	}
+        for (BasicProject project : projs) {
+            System.out.println("\t" + project.getName());
+        }
+        UserRestClient users = jira.getUserClient();
+        User user = users.getUser("test", pm);
+        System.out.println("getUser:");
+        System.out.println("\t" + user.getName());
+    }
 }

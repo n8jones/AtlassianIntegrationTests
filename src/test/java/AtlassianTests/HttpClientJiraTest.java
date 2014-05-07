@@ -26,7 +26,7 @@ import org.junit.Test;
 /**
  * Testing the jira rest api with crowd authentication using simple libraries.
  */
-public class HttpClientJiraTests extends TestCase {
+public class HttpClientJiraTest extends TestCase {
         @Test
 	public void testHttpClientCrowdAuth() throws Exception{
 		
